@@ -17,7 +17,9 @@ contract Contract3 is ERC20, Ownable {
     event TokensSold(address seller, uint256 amount, uint256 salePrice);
 
     // Constructor initializes the ERC20 token with a name and symbol
-    constructor() ERC20("BondingCurveToken", "BCT") Ownable(msg.sender) {}
+    constructor() ERC20("BondingCurveToken", "BCT") Ownable(msg.sender) {
+        _mint(msg.sender, 1 ** uint256(decimals())); // Initial supply to owner
+    }
 
     // Function to receive Ether when msg.data is empty
     receive() external payable {}
@@ -35,6 +37,7 @@ contract Contract3 is ERC20, Ownable {
         require(tx.gasprice <= maxGasPrice, "Gas price exceeds limit");
 
         uint256 totalPrice = numTokens * currentPrice();
+        // revert PING(totalPrice);
         require(msg.value >= totalPrice, "Not enough ETH sent");
 
         _mint(msg.sender, numTokens);

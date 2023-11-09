@@ -9,6 +9,9 @@ contract Contract1 is ERC20, Ownable {
     // Mapping to keep track of banned addresses
     mapping(address => bool) public banned;
 
+    event addressBanned(address indexed banned);
+    event addressUnbanned(address indexed unbanned);
+
     constructor(
         string memory name,
         string memory symbol
@@ -20,23 +23,26 @@ contract Contract1 is ERC20, Ownable {
     function banAddress(address _address) public onlyOwner {
         require(!banned[_address], "Address is already banned");
         banned[_address] = true;
+
+        emit addressBanned(_address);
     }
 
     // Function to unban an address
     function unbanAddress(address _address) public onlyOwner {
         require(banned[_address], "Address is not banned");
         banned[_address] = false;
+
+        emit addressUnbanned(_address);
     }
 
     // Override the transfer function to check for banned addresses
-    function transfer(
-        address sender,
+    function bannableTransfer(
         address recipient,
         uint256 amount
-    ) internal virtual {
-        require(!banned[sender], "Sender address is banned");
+    ) public virtual returns (bool) {
+        require(!banned[msg.sender], "Sender address is banned");
         require(!banned[recipient], "Recipient address is banned");
-        super._transfer(sender, recipient, amount);
+        return super.transfer(recipient, amount);
     }
 
     // Optionally, override the `transferFrom` function if you want to apply bans to `transferFrom` operations as well

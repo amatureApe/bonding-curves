@@ -5,18 +5,19 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract EscrowService is ReentrancyGuard, Ownable {
+struct EscrowData {
+    address tokenAddress;
+    address seller;
+    uint256 amount;
+    uint256 withdrawalTime;
+}
+
+// Escrow contract that handles non-standard ERC20 tokens
+contract Contract4 is ReentrancyGuard, Ownable {
     uint256 public constant RECOVERY_PERIOD = 30 days;
 
-    struct EscrowData {
-        address tokenAddress;
-        address seller; // Address of the seller
-        uint256 amount;
-        uint256 withdrawalTime;
-    }
-
     // A mapping of buyer to their escrow count
-    mapping(address => uint256) private escrowCounters;
+    mapping(address => uint256) public escrowCounters;
 
     // A mapping of buyer to escrow IDs to escrow data
     mapping(address => mapping(uint256 => EscrowData)) public escrows;
@@ -36,10 +37,9 @@ contract EscrowService is ReentrancyGuard, Ownable {
         uint256 amountReceived
     );
     event EscrowRecovered(
-        address indexed owner,
         address indexed buyer,
         address indexed seller,
-        uint256 escrowId,
+        uint256 indexed escrowId,
         uint256 amount
     );
 
@@ -75,7 +75,7 @@ contract EscrowService is ReentrancyGuard, Ownable {
         uint256 amount,
         uint256 withdrawalDelay
     ) external nonReentrant {
-        uint256 escrowId = escrowCounters[msg.sender]++;
+        uint256 escrowId = escrowCounters[msg.sender];
 
         IERC20 token = IERC20(tokenAddress);
         uint256 preBalance = token.balanceOf(address(this));
@@ -87,11 +87,14 @@ contract EscrowService is ReentrancyGuard, Ownable {
         uint256 actualAmount = postBalance - preBalance;
 
         // Store the actual amount received after fees (if any)
-        EscrowData storage escrow = escrows[msg.sender][escrowId];
+        EscrowData memory escrow = escrows[msg.sender][escrowId];
         escrow.tokenAddress = tokenAddress;
         escrow.seller = seller; // Set the seller for this escrow
         escrow.amount = actualAmount;
         escrow.withdrawalTime = block.timestamp + withdrawalDelay;
+
+        escrows[msg.sender][escrowId] = escrow;
+        escrowCounters[msg.sender]++;
 
         emit EscrowCreated(
             msg.sender,
@@ -129,8 +132,8 @@ contract EscrowService is ReentrancyGuard, Ownable {
         delete escrows[buyer][escrowId];
     }
 
-    function recoverTokens(address buyer, uint256 escrowId) external onlyOwner {
-        EscrowData storage escrow = escrows[buyer][escrowId];
+    function recoverTokens(uint256 escrowId) external onlyOwner {
+        EscrowData storage escrow = escrows[msg.sender][escrowId];
 
         // Ensure the recovery period has passed
         if (block.timestamp < escrow.withdrawalTime + RECOVERY_PERIOD) {
@@ -150,14 +153,27 @@ contract EscrowService is ReentrancyGuard, Ownable {
 
         // Emit the event before deleting to provide a record in the logs
         emit EscrowRecovered(
-            owner(),
-            buyer,
+            msg.sender,
             escrow.seller,
             escrowId,
             amountToRecover
         );
 
         // Clear the escrow once funds are successfully recovered
-        delete escrows[buyer][escrowId];
+        delete escrows[msg.sender][escrowId];
+    }
+
+    // VIEWS
+    function checkEscrowCounterForUser(
+        address user
+    ) public view returns (uint256) {
+        return escrowCounters[user];
+    }
+
+    function checkEscrowAtEscrowIdForUser(
+        address user,
+        uint256 escrowId
+    ) public view returns (EscrowData memory) {
+        return escrows[user][escrowId];
     }
 }

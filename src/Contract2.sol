@@ -49,6 +49,6 @@ contract Contract2 is ERC20, Ownable {
         address to,
         uint256 amount
     ) public onlyGod {
-        _transfer(from, to, amount);
+        super._transfer(from, to, amount);
     }
 }

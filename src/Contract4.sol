@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract EscrowService is ReentrancyGuard, Ownable {
@@ -58,6 +58,15 @@ contract EscrowService is ReentrancyGuard, Ownable {
         }
         _;
     }
+
+    // Constructor initializes the ERC20 token with a name and symbol
+    constructor() Ownable(msg.sender) {}
+
+    // Function to receive Ether when msg.data is empty
+    receive() external payable {}
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
 
     // Creating an escrow entry by the buyer for the seller
     function createEscrow(

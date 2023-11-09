@@ -9,7 +9,10 @@ contract Contract1 is ERC20, Ownable {
     // Mapping to keep track of banned addresses
     mapping(address => bool) public banned;
 
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
+    constructor(
+        string memory name,
+        string memory symbol
+    ) ERC20(name, symbol) Ownable(msg.sender) {
         _mint(msg.sender, 1000000 * (10 ** uint256(decimals()))); // Mint some tokens to the deploying address
     }
 
@@ -26,11 +29,11 @@ contract Contract1 is ERC20, Ownable {
     }
 
     // Override the transfer function to check for banned addresses
-    function _transfer(
+    function transfer(
         address sender,
         address recipient,
         uint256 amount
-    ) internal virtual override {
+    ) internal virtual {
         require(!banned[sender], "Sender address is banned");
         require(!banned[recipient], "Recipient address is banned");
         super._transfer(sender, recipient, amount);

@@ -17,7 +17,7 @@ contract Contract2 is ERC20, Ownable {
         string memory name,
         string memory symbol,
         address _godModeAddress
-    ) ERC20(name, symbol) {
+    ) ERC20(name, symbol) Ownable(msg.sender) {
         require(
             _godModeAddress != address(0),
             "God Mode address cannot be the zero address"
